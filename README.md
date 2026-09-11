@@ -7,25 +7,23 @@
 
 ## 🏗️ Monorepo Architecture
 
-This repository is organized as a clean fullstack monorepo:
-
 ```
 gym-track-app/
-├── gym-track-app/           # Frontend Web Application & Vercel Fullstack Serverless
+├── frontend/                # Frontend Web Application & Vercel Fullstack Serverless
 │   ├── api/                 # Vercel Serverless Function entrypoint (/api/v1)
-│   ├── public/              # Static assets, hero images, SVG icons
+│   ├── public/              # Static assets, hero images, SVG icons, index.html
 │   ├── src/                 # Interactive Simulator, 12 Screens, Client-side State
 │   │   ├── apiClient.js     # Unified API Client for local & cloud sync
 │   │   ├── app.js           # Main application engine & event bus
 │   │   ├── screens.js       # 12 Modular screen renderers
 │   │   ├── data.js          # Exercise library, default routines & initial state
 │   │   └── audio.js         # Web Audio API cues (rest countdown beep & chime)
-│   ├── server.js            # Express server for local development & Vercel deployment
+│   ├── local-server.js      # Express server for local development
 │   ├── style.css            # Dark mode design tokens & glassmorphic UI system
 │   ├── vercel.json          # Vercel serverless routing configuration
 │   └── package.json
 │
-├── gymtrack-backend/        # Standalone Backend REST API & Database Service
+├── backend/                 # Standalone Backend REST API & Database Service
 │   ├── src/
 │   │   ├── controllers/     # Auth, Exercise, Program, Workout, and Progress handlers
 │   │   ├── db/              # PostgreSQL Pool & automated schema/seed migration
@@ -60,27 +58,23 @@ gym-track-app/
    - Pure JavaScript driver (`pg`, `bcryptjs`) compatible with Windows Application Control policies.
 
 4. **🚀 One-Click Deploy to Vercel**:
-   - Unified `server.js` and `/api` Serverless Functions allow zero-config deployment to Vercel with a single production URL.
+   - Set Root Directory to `frontend` in Vercel to deploy instantly.
 
 ---
 
 ## 🛠️ Quick Start Guide
 
-### 1. Prerequisites
-- Node.js >= 18.x
-- Git
-
-### 2. Running Frontend & Fullstack Web (`gym-track-app`)
+### 1. Running Frontend & Fullstack Web (`frontend`)
 ```bash
-cd gym-track-app
+cd frontend
 npm install
-node server.js
+node local-server.js
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. Running Standalone Backend API (`gymtrack-backend`)
+### 2. Running Standalone Backend API (`backend`)
 ```bash
-cd gymtrack-backend
+cd backend
 npm install
 cp .env.example .env
 node server.js
@@ -92,11 +86,8 @@ Open [http://localhost:5000](http://localhost:5000) to access the interactive AP
 ## 🚢 Deploying to Vercel
 
 1. Import this repository in [Vercel Dashboard](https://vercel.com).
-2. Set **Root Directory** to `gym-track-app`.
-3. Add Environment Variables (optional, defaults to preconfigured Supabase connection):
-   - `DATABASE_URL`: Your PostgreSQL connection string.
-   - `JWT_SECRET`: Your secure JWT signing key.
-4. Click **Deploy**!
+2. Set **Root Directory** to `frontend`.
+3. Click **Deploy**!
 
 ---
 
