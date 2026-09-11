@@ -1,55 +1,43 @@
-import http from 'node:http';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import apiRoutes from './api/backend/routes/api.js';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 3000;
-const MIME_TYPES = {
-  '.html': 'text/html',
-  '.css': 'text/css',
-  '.js': 'text/javascript',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-};
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-const server = http.createServer((req, res) => {
-  let reqUrl = req.url.split('?')[0];
-  let filePath = path.join(__dirname, reqUrl === '/' ? 'index.html' : reqUrl);
+app.use(cors());
+app.use(express.json());
 
-  // If file doesn't exist, check public/ or assets/
-  if (!fs.existsSync(filePath)) {
-    const publicPath = path.join(__dirname, 'public', reqUrl);
-    if (fs.existsSync(publicPath)) {
-      filePath = publicPath;
-    }
-  }
+// API routes
+app.use('/api/v1', apiRoutes);
+app.use('/v1', apiRoutes);
 
-  const ext = path.extname(filePath).toLowerCase();
-  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('404 Not Found');
-      } else {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end(`Server Error: ${err.code}`);
-      }
-    } else {
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(content);
-    }
+// Health check
+app.get(['/api', '/api/health'], (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'GymTrack Local Fullstack',
+    database: 'PostgreSQL (Supabase Singapore)',
+    timestamp: new Date()
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`GymTrack prototype running at http://localhost:${PORT}`);
+// Serve static frontend files
+app.use(express.static(__dirname));
+
+// Fallback to index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 GymTrack Local Fullstack running on http://localhost:${PORT}`);
 });
