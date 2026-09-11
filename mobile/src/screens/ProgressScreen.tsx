@@ -3,32 +3,146 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS } from '../theme/theme';
 import { Header } from '../components/Header';
+import { OneRMCalculatorModal } from '../components/OneRMCalculatorModal';
+import { useWorkout } from '../context/WorkoutContext';
 
 export const ProgressScreen: React.FC = () => {
-  const [selectedLift, setSelectedLift] = useState<'bench' | 'squat' | 'deadlift'>('bench');
+  const { unit, testHaptics } = useWorkout();
+  const [selectedLift, setSelectedLift] = useState<'bench' | 'squat' | 'deadlift' | 'ohp'>('bench');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'1W' | '1M' | '3M' | '1Y'>('1M');
+  const [isCalculatorVisible, setIsCalculatorVisible] = useState(false);
+  const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
   const liftData = {
-    bench: { name: 'Barbell Bench Press', current1RM: 101.3, delta: '+3.8%', prDate: 'Today', prev: 97.5 },
-    squat: { name: 'Back Squat', current1RM: 145.0, delta: '+5.1%', prDate: '3 days ago', prev: 138.0 },
-    deadlift: { name: 'Conventional Deadlift', current1RM: 185.0, delta: '+2.8%', prDate: '1 week ago', prev: 180.0 },
+    bench: {
+      name: 'Barbell Bench Press',
+      current1RM: 101.3,
+      delta: '+3.8%',
+      prDate: 'Today',
+      bars: [
+        { label: 'W1', val: 92.5, height: 50 },
+        { label: 'W2', val: 95.0, height: 62 },
+        { label: 'W3', val: 95.0, height: 62 },
+        { label: 'W4', val: 97.5, height: 75 },
+        { label: 'Today', val: 101.3, height: 95, current: true },
+      ],
+    },
+    squat: {
+      name: 'Back Squat',
+      current1RM: 145.0,
+      delta: '+5.1%',
+      prDate: '3 days ago',
+      bars: [
+        { label: 'W1', val: 130.0, height: 55 },
+        { label: 'W2', val: 135.0, height: 65 },
+        { label: 'W3', val: 135.0, height: 65 },
+        { label: 'W4', val: 140.0, height: 78 },
+        { label: 'Today', val: 145.0, height: 95, current: true },
+      ],
+    },
+    deadlift: {
+      name: 'Conventional Deadlift',
+      current1RM: 185.0,
+      delta: '+2.8%',
+      prDate: '1 week ago',
+      bars: [
+        { label: 'W1', val: 170.0, height: 60 },
+        { label: 'W2', val: 175.0, height: 70 },
+        { label: 'W3', val: 175.0, height: 70 },
+        { label: 'W4', val: 180.0, height: 82 },
+        { label: 'Today', val: 185.0, height: 95, current: true },
+      ],
+    },
+    ohp: {
+      name: 'Overhead Press (OHP)',
+      current1RM: 65.0,
+      delta: '+4.0%',
+      prDate: '5 days ago',
+      bars: [
+        { label: 'W1', val: 57.5, height: 55 },
+        { label: 'W2', val: 60.0, height: 68 },
+        { label: 'W3', val: 60.0, height: 68 },
+        { label: 'W4', val: 62.5, height: 80 },
+        { label: 'Today', val: 65.0, height: 95, current: true },
+      ],
+    },
   };
+
+  const muscleData = [
+    {
+      id: 'chest',
+      muscle: 'Chest & Push',
+      percent: 32,
+      volume: `14,200 ${unit}`,
+      color: COLORS.primary,
+      exercises: ['Barbell Bench Press', 'Incline Dumbbell Press', 'Cable Fly', 'Dips'],
+    },
+    {
+      id: 'back',
+      muscle: 'Back & Pull',
+      percent: 28,
+      volume: `12,400 ${unit}`,
+      color: '#38BDF8',
+      exercises: ['Deadlift', 'Barbell Row', 'Lat Pulldown', 'Pull-Ups'],
+    },
+    {
+      id: 'legs',
+      muscle: 'Legs & Core',
+      percent: 26,
+      volume: `11,500 ${unit}`,
+      color: COLORS.accentGold,
+      exercises: ['Back Squat', 'Romanian Deadlift', 'Leg Press', 'Calf Raises'],
+    },
+    {
+      id: 'arms',
+      muscle: 'Arms & Delts',
+      percent: 14,
+      volume: `6,200 ${unit}`,
+      color: '#A855F7',
+      exercises: ['Bicep Curls', 'Tricep Pushdown', 'Overhead Press', 'Lateral Raises'],
+    },
+  ];
 
   const current = liftData[selectedLift];
 
   return (
     <View style={styles.screen}>
-      <Header subtitle="Analytics & 1RM Progression" />
+      <Header subtitle="Strength & 1RM Progression" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Top Calculator Banner */}
+        <TouchableOpacity
+          style={styles.calcBanner}
+          onPress={() => {
+            setIsCalculatorVisible(true);
+            testHaptics('light');
+          }}
+          activeOpacity={0.8}
+        >
+          <View style={styles.calcLeft}>
+            <View style={styles.calcIconCircle}>
+              <Ionicons name="calculator-outline" size={22} color={COLORS.primary} />
+            </View>
+            <View>
+              <Text style={styles.calcTitle}>1RM STRENGTH CALCULATOR</Text>
+              <Text style={styles.calcSub}>Compute your max lift & percentage load</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+        </TouchableOpacity>
+
         {/* Lift Selector Pills */}
         <View style={styles.selectorRow}>
-          {(['bench', 'squat', 'deadlift'] as const).map((key) => {
+          {(['bench', 'squat', 'deadlift', 'ohp'] as const).map((key) => {
             const active = selectedLift === key;
-            const labels = { bench: 'Bench', squat: 'Squat', deadlift: 'Deadlift' };
+            const labels = { bench: 'Bench', squat: 'Squat', deadlift: 'Deadlift', ohp: 'OHP' };
             return (
               <TouchableOpacity
                 key={key}
                 style={[styles.selectorBtn, active && styles.selectorBtnActive]}
-                onPress={() => setSelectedLift(key)}
+                onPress={() => {
+                  setSelectedLift(key);
+                  testHaptics('light');
+                }}
               >
                 <Text style={[styles.selectorText, active && styles.selectorTextActive]}>
                   {labels[key]}
@@ -41,9 +155,9 @@ export const ProgressScreen: React.FC = () => {
         {/* 1RM Highlight Card */}
         <View style={styles.card}>
           <View style={styles.cardTop}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.exerciseName}>{current.name}</Text>
-              <Text style={styles.prDateText}>Latest PR: {current.prDate}</Text>
+              <Text style={styles.prDateText}>Latest Record: {current.prDate}</Text>
             </View>
             <View style={styles.deltaBadge}>
               <Ionicons name="trending-up" size={14} color={COLORS.primary} />
@@ -53,21 +167,32 @@ export const ProgressScreen: React.FC = () => {
 
           <View style={styles.valueRow}>
             <Text style={styles.big1RM}>{current.current1RM}</Text>
-            <Text style={styles.unitText}>KG</Text>
-            <Text style={styles.subtext}>Estimated 1RM</Text>
+            <Text style={styles.unitText}>{unit.toUpperCase()}</Text>
+            <Text style={styles.subtext}>Estimated 1RM (Epley)</Text>
+          </View>
+
+          {/* Timeframe Filter Buttons */}
+          <View style={styles.timeframeRow}>
+            {(['1W', '1M', '3M', '1Y'] as const).map((tf) => (
+              <TouchableOpacity
+                key={tf}
+                style={[styles.tfBtn, selectedTimeframe === tf && styles.tfBtnActive]}
+                onPress={() => {
+                  setSelectedTimeframe(tf);
+                  testHaptics('light');
+                }}
+              >
+                <Text style={[styles.tfText, selectedTimeframe === tf && styles.tfTextActive]}>
+                  {tf}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* Simulated Chart Bars */}
           <View style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>LAST 5 SESSIONS (EPLEY CURVE)</Text>
             <View style={styles.barChart}>
-              {[
-                { label: 'W1', val: 92.5, height: 50 },
-                { label: 'W2', val: 95.0, height: 62 },
-                { label: 'W3', val: 95.0, height: 62 },
-                { label: 'W4', val: 97.5, height: 75 },
-                { label: 'Today', val: current.current1RM, height: 95, current: true },
-              ].map((item, idx) => (
+              {current.bars.map((item, idx) => (
                 <View key={idx} style={styles.barCol}>
                   <Text style={styles.barValText}>{item.val}</Text>
                   <View
@@ -86,33 +211,54 @@ export const ProgressScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Muscle Split Volume */}
+        {/* Muscle Split Volume (Clickable) */}
         <View style={styles.card}>
-          <Text style={styles.sectionHeader}>MUSCLE VOLUME DISTRIBUTION (THIS MONTH)</Text>
+          <Text style={styles.sectionHeader}>MUSCLE VOLUME DISTRIBUTION (TAP TO EXPAND)</Text>
 
-          {[
-            { muscle: 'Chest & Push', percent: 32, volume: '14,200 kg', color: COLORS.primary },
-            { muscle: 'Back & Pull', percent: 28, volume: '12,400 kg', color: '#38BDF8' },
-            { muscle: 'Legs & Core', percent: 26, volume: '11,500 kg', color: COLORS.accentGold },
-            { muscle: 'Arms & Delts', percent: 14, volume: '6,200 kg', color: '#A855F7' },
-          ].map((item, idx) => (
-            <View key={idx} style={styles.muscleRow}>
-              <View style={styles.muscleMeta}>
-                <Text style={styles.muscleName}>{item.muscle}</Text>
-                <Text style={styles.muscleVol}>{item.volume} ({item.percent}%)</Text>
-              </View>
-              <View style={styles.track}>
-                <View
-                  style={[
-                    styles.fill,
-                    { width: `${item.percent}%`, backgroundColor: item.color },
-                  ]}
-                />
-              </View>
-            </View>
-          ))}
+          {muscleData.map((item) => {
+            const isExpanded = selectedMuscle === item.id;
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.muscleRow}
+                onPress={() => {
+                  setSelectedMuscle(isExpanded ? null : item.id);
+                  testHaptics('light');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.muscleMeta}>
+                  <Text style={styles.muscleName}>{item.muscle}</Text>
+                  <Text style={styles.muscleVol}>{item.volume} ({item.percent}%)</Text>
+                </View>
+                <View style={styles.track}>
+                  <View
+                    style={[
+                      styles.fill,
+                      { width: `${item.percent}%`, backgroundColor: item.color },
+                    ]}
+                  />
+                </View>
+
+                {isExpanded && (
+                  <View style={styles.muscleExercisesBox}>
+                    <Text style={styles.muscleExTitle}>Top Contributing Exercises:</Text>
+                    {item.exercises.map((ex, i) => (
+                      <Text key={i} style={styles.muscleExItem}>• {ex}</Text>
+                    ))}
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
+
+      {/* 1RM Calculator Modal */}
+      <OneRMCalculatorModal
+        visible={isCalculatorVisible}
+        onClose={() => setIsCalculatorVisible(false)}
+      />
     </View>
   );
 };
@@ -125,6 +271,41 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: SPACING.lg,
     paddingBottom: 100,
+  },
+  calcBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 229, 153, 0.3)',
+    marginBottom: SPACING.lg,
+  },
+  calcLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  calcIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primarySubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calcTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: COLORS.primary,
+    letterSpacing: 1,
+  },
+  calcSub: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
   selectorRow: {
     flexDirection: 'row',
@@ -194,7 +375,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 6,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   big1RM: {
     fontSize: 38,
@@ -211,17 +392,36 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginLeft: 6,
   },
+  timeframeRow: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.bgElevated,
+    borderRadius: RADIUS.sm,
+    padding: 3,
+    marginBottom: SPACING.md,
+    gap: 4,
+  },
+  tfBtn: {
+    flex: 1,
+    paddingVertical: 5,
+    borderRadius: RADIUS.sm,
+    alignItems: 'center',
+  },
+  tfBtnActive: {
+    backgroundColor: COLORS.primary,
+  },
+  tfText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+  },
+  tfTextActive: {
+    color: '#0B0F17',
+    fontWeight: '800',
+  },
   chartContainer: {
     borderTopWidth: 1,
     borderTopColor: COLORS.borderSubtle,
     paddingTop: SPACING.md,
-  },
-  chartTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    letterSpacing: 1,
-    marginBottom: 16,
   },
   barChart: {
     flexDirection: 'row',
@@ -272,7 +472,10 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   muscleRow: {
-    marginBottom: 12,
+    marginBottom: 14,
+    backgroundColor: COLORS.bgElevated,
+    padding: 10,
+    borderRadius: RADIUS.md,
   },
   muscleMeta: {
     flexDirection: 'row',
@@ -297,5 +500,22 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     borderRadius: 4,
+  },
+  muscleExercisesBox: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderSubtle,
+  },
+  muscleExTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    marginBottom: 4,
+  },
+  muscleExItem: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
   },
 });

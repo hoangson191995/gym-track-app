@@ -1,12 +1,187 @@
-﻿import React from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS } from '../theme/theme';
 import { Header } from '../components/Header';
-import { useWorkout } from '../context/WorkoutContext';
+import { WorkoutDetailModal, PastWorkoutDetail } from '../components/WorkoutDetailModal';
+import { useWorkout, WorkoutTemplate } from '../context/WorkoutContext';
+
+const WORKOUT_TEMPLATES: Record<string, WorkoutTemplate> = {
+  push: {
+    name: 'Push Hypertrophy Day',
+    exercises: [
+      {
+        name: 'Barbell Bench Press',
+        exerciseId: 'bench_press',
+        targetMuscles: ['Chest', 'Triceps'],
+        defaultSets: [
+          { weight: 80, reps: 8, setType: 'N' },
+          { weight: 80, reps: 8, setType: 'N' },
+          { weight: 80, reps: 7, setType: 'N' },
+          { weight: 75, reps: 8, setType: 'D' },
+        ],
+      },
+      {
+        name: 'Incline Dumbbell Press',
+        exerciseId: 'incline_db_press',
+        targetMuscles: ['Upper Chest', 'Front Delts'],
+        defaultSets: [
+          { weight: 30, reps: 10, setType: 'N' },
+          { weight: 30, reps: 10, setType: 'N' },
+          { weight: 28, reps: 12, setType: 'N' },
+        ],
+      },
+      {
+        name: 'Cable Chest Fly',
+        exerciseId: 'cable_chest_fly',
+        targetMuscles: ['Inner Chest'],
+        defaultSets: [
+          { weight: 15, reps: 12, setType: 'N' },
+          { weight: 15, reps: 12, setType: 'N' },
+          { weight: 12, reps: 15, setType: 'F' },
+        ],
+      },
+    ],
+  },
+  pull: {
+    name: 'Pull Power & Lats',
+    exercises: [
+      {
+        name: 'Conventional Deadlift',
+        exerciseId: 'deadlift',
+        targetMuscles: ['Back', 'Hamstrings', 'Glutes'],
+        defaultSets: [
+          { weight: 140, reps: 5, setType: 'N' },
+          { weight: 150, reps: 5, setType: 'N' },
+          { weight: 160, reps: 3, setType: 'N' },
+        ],
+      },
+      {
+        name: 'Barbell Bent-Over Row',
+        exerciseId: 'barbell_row',
+        targetMuscles: ['Lats', 'Rhomboids', 'Biceps'],
+        defaultSets: [
+          { weight: 75, reps: 8, setType: 'N' },
+          { weight: 75, reps: 8, setType: 'N' },
+          { weight: 70, reps: 10, setType: 'N' },
+        ],
+      },
+      {
+        name: 'Lat Pulldown',
+        exerciseId: 'lat_pulldown',
+        targetMuscles: ['Lats', 'Biceps'],
+        defaultSets: [
+          { weight: 65, reps: 10, setType: 'N' },
+          { weight: 65, reps: 10, setType: 'N' },
+          { weight: 60, reps: 12, setType: 'D' },
+        ],
+      },
+    ],
+  },
+  legs: {
+    name: 'Legs & Squats Hypertrophy',
+    exercises: [
+      {
+        name: 'Barbell Back Squat',
+        exerciseId: 'squat',
+        targetMuscles: ['Quads', 'Glutes'],
+        defaultSets: [
+          { weight: 110, reps: 6, setType: 'N' },
+          { weight: 120, reps: 6, setType: 'N' },
+          { weight: 120, reps: 6, setType: 'N' },
+          { weight: 100, reps: 10, setType: 'D' },
+        ],
+      },
+      {
+        name: 'Romanian Deadlift (RDL)',
+        exerciseId: 'rdl',
+        targetMuscles: ['Hamstrings', 'Glutes'],
+        defaultSets: [
+          { weight: 90, reps: 8, setType: 'N' },
+          { weight: 90, reps: 8, setType: 'N' },
+          { weight: 90, reps: 8, setType: 'N' },
+        ],
+      },
+      {
+        name: 'Incline Leg Press',
+        exerciseId: 'leg_press',
+        targetMuscles: ['Quads'],
+        defaultSets: [
+          { weight: 200, reps: 12, setType: 'N' },
+          { weight: 220, reps: 10, setType: 'N' },
+          { weight: 240, reps: 8, setType: 'F' },
+        ],
+      },
+    ],
+  },
+};
+
+const PAST_WORKOUTS_MOCK: PastWorkoutDetail[] = [
+  {
+    id: 'w_pull_1',
+    name: 'Pull Power & Heavy Rows',
+    date: 'Yesterday, 6:15 PM',
+    duration: '1h 05m',
+    volume: '11,400 kg',
+    prs: ['Barbell Row 90kg'],
+    exercises: [
+      {
+        name: 'Conventional Deadlift',
+        sets: [
+          { setNumber: 1, weight: 140, reps: 5, completed: true },
+          { setNumber: 2, weight: 150, reps: 5, completed: true },
+          { setNumber: 3, weight: 160, reps: 3, completed: true },
+        ],
+      },
+      {
+        name: 'Barbell Bent-Over Row',
+        sets: [
+          { setNumber: 1, weight: 80, reps: 8, completed: true },
+          { setNumber: 2, weight: 90, reps: 6, completed: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w_legs_1',
+    name: 'Leg Day & Squat PR Day',
+    date: '2 days ago, 7:00 AM',
+    duration: '1h 18m',
+    volume: '16,250 kg',
+    prs: ['Back Squat 145kg'],
+    exercises: [
+      {
+        name: 'Barbell Back Squat',
+        sets: [
+          { setNumber: 1, weight: 120, reps: 6, completed: true },
+          { setNumber: 2, weight: 135, reps: 5, completed: true },
+          { setNumber: 3, weight: 145, reps: 3, completed: true },
+        ],
+      },
+      {
+        name: 'Romanian Deadlift',
+        sets: [
+          { setNumber: 1, weight: 90, reps: 8, completed: true },
+          { setNumber: 2, weight: 90, reps: 8, completed: true },
+        ],
+      },
+    ],
+  },
+];
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { currentUser, workoutSeconds } = useWorkout();
+  const {
+    currentUser,
+    workoutName,
+    workoutSeconds,
+    activeExercises,
+    startNewWorkoutSession,
+    testHaptics,
+    showToast,
+  } = useWorkout();
+
+  const [streakDays, setStreakDays] = useState([true, true, true, true, false, false, false]);
+  const [selectedPastWorkout, setSelectedPastWorkout] = useState<PastWorkoutDetail | null>(null);
 
   const formatSeconds = (total: number) => {
     const mins = Math.floor(total / 60);
@@ -14,15 +189,36 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleStartTemplate = (key: 'push' | 'pull' | 'legs') => {
+    const template = WORKOUT_TEMPLATES[key];
+    startNewWorkoutSession(template.name, template);
+    navigation.navigate('Workout');
+  };
+
+  const handleStartCustom = () => {
+    startNewWorkoutSession('Custom Training Session');
+    navigation.navigate('Workout');
+  };
+
+  const toggleStreakDay = (index: number) => {
+    setStreakDays((prev) => {
+      const next = [...prev];
+      next[index] = !next[index];
+      return next;
+    });
+    testHaptics('light');
+    showToast('Streak day updated!');
+  };
+
   return (
     <View style={styles.screen}>
       <Header />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Welcome Banner */}
+        {/* Welcome Section */}
         <View style={styles.welcomeSection}>
           <Text style={styles.greeting}>WELCOME BACK,</Text>
           <Text style={styles.userName}>{currentUser ? currentUser.name : 'ALEX NGUYEN'}</Text>
-          <Text style={styles.quote}>"Today is Push Day. Consistency defines greatness."</Text>
+          <Text style={styles.quote}>"Consistency beats motivation every single day."</Text>
         </View>
 
         {/* Active Workout CTA Card */}
@@ -39,13 +235,15 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Text style={styles.liveTimer}>{formatSeconds(workoutSeconds)}</Text>
           </View>
 
-          <Text style={styles.activeTitle}>Push Hypertrophy Day</Text>
-          <Text style={styles.activeSubtitle}>Barbell Bench Press • Incline DB • Cable Fly</Text>
+          <Text style={styles.activeTitle}>{workoutName}</Text>
+          <Text style={styles.activeSubtitle}>
+            {activeExercises.map((e) => e.name).slice(0, 3).join(' • ')}
+          </Text>
 
           <View style={styles.activeFooter}>
             <View style={styles.activeStat}>
               <Ionicons name="barbell-outline" size={16} color={COLORS.primary} />
-              <Text style={styles.activeStatText}>4 Sets Active</Text>
+              <Text style={styles.activeStatText}>{activeExercises.length} Exercises Loaded</Text>
             </View>
             <View style={styles.resumeBtn}>
               <Text style={styles.resumeBtnText}>Resume</Text>
@@ -54,85 +252,132 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
         </TouchableOpacity>
 
-        {/* Streak & Consistency */}
+        {/* Quick Launch Workout Templates */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>QUICK START WORKOUT</Text>
+        </View>
+        <View style={styles.templateGrid}>
+          <TouchableOpacity
+            style={styles.templateBtn}
+            onPress={() => handleStartTemplate('push')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="flame" size={20} color={COLORS.primary} />
+            <Text style={styles.templateBtnTitle}>Push Day</Text>
+            <Text style={styles.templateBtnSub}>Chest & Triceps</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.templateBtn}
+            onPress={() => handleStartTemplate('pull')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="flash" size={20} color="#38BDF8" />
+            <Text style={styles.templateBtnTitle}>Pull Day</Text>
+            <Text style={styles.templateBtnSub}>Back & Biceps</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.templateBtn}
+            onPress={() => handleStartTemplate('legs')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="barbell" size={20} color={COLORS.accentGold} />
+            <Text style={styles.templateBtnTitle}>Leg Day</Text>
+            <Text style={styles.templateBtnSub}>Squat & Hamstrings</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.templateBtn, styles.templateBtnCustom]}
+            onPress={handleStartCustom}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={20} color={COLORS.primary} />
+            <Text style={styles.templateBtnTitle}>Empty Session</Text>
+            <Text style={styles.templateBtnSub}>Custom Lifts</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Streak & Consistency Card */}
         <View style={styles.streakCard}>
           <View style={styles.streakHeader}>
             <View style={styles.streakTitleRow}>
               <Ionicons name="flame" size={24} color={COLORS.accentGold} />
-              <Text style={styles.streakTitle}>4-Day Streak!</Text>
+              <Text style={styles.streakTitle}>
+                {streakDays.filter(Boolean).length}-Day Streak!
+              </Text>
             </View>
             <Text style={styles.streakGoal}>Goal: 5 days/wk</Text>
           </View>
 
           <View style={styles.daysRow}>
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
-              const completed = i < 4;
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
+              const completed = streakDays[i];
               return (
-                <View key={i} style={styles.dayCol}>
+                <TouchableOpacity
+                  key={i}
+                  style={styles.dayCol}
+                  onPress={() => toggleStreakDay(i)}
+                  activeOpacity={0.7}
+                >
                   <View
                     style={[
                       styles.dayDot,
                       completed ? styles.dayDotActive : styles.dayDotInactive,
                     ]}
                   >
-                    {completed && <Ionicons name="checkmark" size={12} color="#0B0F17" />}
+                    {completed && <Ionicons name="checkmark" size={14} color="#0B0F17" />}
                   </View>
                   <Text style={styles.dayLabel}>{day}</Text>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* Weekly Stats 3-Col Grid */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Ionicons name="flash-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.statVal}>14,820</Text>
-            <Text style={styles.statUnit}>Volume (kg)</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Ionicons name="layers-outline" size={20} color={COLORS.accentGold} />
-            <Text style={styles.statVal}>48</Text>
-            <Text style={styles.statUnit}>Total Sets</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Ionicons name="time-outline" size={20} color="#38BDF8" />
-            <Text style={styles.statVal}>3.2h</Text>
-            <Text style={styles.statUnit}>Gym Time</Text>
-          </View>
-        </View>
-
-        {/* Recent Workouts */}
+        {/* Recent Workouts List (Clickable) */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>RECENT WORKOUTS</Text>
+          <Text style={styles.sectionTitle}>RECENT WORKOUTS (TAP TO VIEW)</Text>
           <TouchableOpacity onPress={() => navigation.navigate('History')}>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.recentItem}>
-          <View style={styles.recentIcon}>
-            <Ionicons name="fitness-outline" size={22} color={COLORS.primary} />
-          </View>
-          <View style={styles.recentInfo}>
-            <Text style={styles.recentName}>Pull Power & Lats</Text>
-            <Text style={styles.recentMeta}>Yesterday • 1h 05m • 6 exercises</Text>
-          </View>
-          <Text style={styles.recentVolume}>11,400 kg</Text>
-        </View>
-
-        <View style={styles.recentItem}>
-          <View style={styles.recentIcon}>
-            <Ionicons name="fitness-outline" size={22} color={COLORS.accentGold} />
-          </View>
-          <View style={styles.recentInfo}>
-            <Text style={styles.recentName}>Legs & Squat PR Day</Text>
-            <Text style={styles.recentMeta}>2 days ago • 1h 18m • 5 exercises</Text>
-          </View>
-          <Text style={styles.recentVolume}>16,250 kg</Text>
-        </View>
+        {PAST_WORKOUTS_MOCK.map((w) => (
+          <TouchableOpacity
+            key={w.id}
+            style={styles.recentItem}
+            onPress={() => setSelectedPastWorkout(w)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.recentIcon}>
+              <Ionicons name="fitness-outline" size={22} color={COLORS.primary} />
+            </View>
+            <View style={styles.recentInfo}>
+              <Text style={styles.recentName}>{w.name}</Text>
+              <Text style={styles.recentMeta}>{w.date} • {w.duration}</Text>
+            </View>
+            <View style={styles.recentRight}>
+              <Text style={styles.recentVolume}>{w.volume}</Text>
+              <Ionicons name="chevron-forward" size={14} color={COLORS.textMuted} />
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
+
+      {/* Workout Detail Modal */}
+      <WorkoutDetailModal
+        workout={selectedPastWorkout}
+        visible={selectedPastWorkout !== null}
+        onClose={() => setSelectedPastWorkout(null)}
+        onRepeat={() => {
+          if (selectedPastWorkout) {
+            startNewWorkoutSession(selectedPastWorkout.name);
+            setSelectedPastWorkout(null);
+            navigation.navigate('Workout');
+          }
+        }}
+      />
     </View>
   );
 };
@@ -210,8 +455,8 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   activeTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 19,
+    fontWeight: '900',
     color: COLORS.textPrimary,
     marginBottom: 4,
   },
@@ -252,6 +497,52 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0B0F17',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.textMuted,
+    letterSpacing: 1.2,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  templateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: SPACING.lg,
+  },
+  templateBtn: {
+    width: '48%',
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.borderCard,
+  },
+  templateBtnCustom: {
+    borderColor: 'rgba(0, 229, 153, 0.3)',
+    borderStyle: 'dashed',
+  },
+  templateBtnTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    marginTop: 8,
+  },
+  templateBtnSub: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
   streakCard: {
     backgroundColor: COLORS.bgCard,
     borderRadius: RADIUS.md,
@@ -290,9 +581,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dayDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -305,51 +596,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   dayLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: COLORS.textMuted,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: SPACING.xl,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: COLORS.bgCard,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.borderCard,
-  },
-  statVal: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    marginTop: 6,
-  },
-  statUnit: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    letterSpacing: 1.2,
-  },
-  viewAllText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.primary,
   },
   recentItem: {
     flexDirection: 'row',
@@ -382,6 +631,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textMuted,
     marginTop: 2,
+  },
+  recentRight: {
+    alignItems: 'flex-end',
+    gap: 4,
   },
   recentVolume: {
     fontSize: 13,

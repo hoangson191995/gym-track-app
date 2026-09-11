@@ -1,100 +1,220 @@
-﻿import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+﻿import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS } from '../theme/theme';
 import { Header } from '../components/Header';
+import { WorkoutDetailModal, PastWorkoutDetail } from '../components/WorkoutDetailModal';
+import { useWorkout } from '../context/WorkoutContext';
 
-export const HistoryScreen: React.FC = () => {
-  const pastWorkouts = [
-    {
-      id: 'w_1',
-      date: 'Today, 7:30 PM',
-      name: 'Push Day (Hypertrophy)',
-      duration: '42m',
-      volume: '14,820 kg',
-      prs: ['Bench Press 101.3kg'],
-      exercises: ['Barbell Bench Press', 'Incline DB Press', 'Cable Fly'],
-    },
-    {
-      id: 'w_2',
-      date: 'Yesterday, 6:15 PM',
-      name: 'Pull Power & Heavy Rows',
-      duration: '1h 05m',
-      volume: '11,400 kg',
-      prs: ['Barbell Row 90kg'],
-      exercises: ['Deadlift', 'Barbell Row', 'Lat Pulldown', 'Bicep Curls'],
-    },
-    {
-      id: 'w_3',
-      date: 'Wed, Sep 9',
-      name: 'Leg Day & Squats',
-      duration: '1h 18m',
-      volume: '16,250 kg',
-      prs: ['Squat 145kg'],
-      exercises: ['Back Squat', 'Romanian Deadlift', 'Leg Press', 'Calf Raises'],
-    },
-    {
-      id: 'w_4',
-      date: 'Mon, Sep 7',
-      name: 'Upper Body Conditioning',
-      duration: '54m',
-      volume: '9,800 kg',
-      prs: [],
-      exercises: ['Overhead Press', 'Dips', 'Lateral Raises', 'Facepulls'],
-    },
+const ALL_PAST_WORKOUTS: PastWorkoutDetail[] = [
+  {
+    id: 'w_1',
+    date: 'Today, 7:30 PM',
+    name: 'Push Day (Hypertrophy)',
+    duration: '42m',
+    volume: '14,820 kg',
+    prs: ['Bench Press 101.3kg'],
+    exercises: [
+      {
+        name: 'Barbell Bench Press',
+        sets: [
+          { setNumber: 1, weight: 80, reps: 8, completed: true },
+          { setNumber: 2, weight: 80, reps: 8, completed: true },
+          { setNumber: 3, weight: 80, reps: 7, completed: true },
+          { setNumber: 4, weight: 75, reps: 8, completed: true },
+        ],
+      },
+      {
+        name: 'Incline Dumbbell Press',
+        sets: [
+          { setNumber: 1, weight: 30, reps: 10, completed: true },
+          { setNumber: 2, weight: 30, reps: 10, completed: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w_2',
+    date: 'Yesterday, 6:15 PM',
+    name: 'Pull Power & Heavy Rows',
+    duration: '1h 05m',
+    volume: '11,400 kg',
+    prs: ['Barbell Row 90kg'],
+    exercises: [
+      {
+        name: 'Conventional Deadlift',
+        sets: [
+          { setNumber: 1, weight: 140, reps: 5, completed: true },
+          { setNumber: 2, weight: 150, reps: 5, completed: true },
+          { setNumber: 3, weight: 160, reps: 3, completed: true },
+        ],
+      },
+      {
+        name: 'Barbell Bent-Over Row',
+        sets: [
+          { setNumber: 1, weight: 80, reps: 8, completed: true },
+          { setNumber: 2, weight: 90, reps: 6, completed: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w_3',
+    date: 'Wed, Sep 9',
+    name: 'Leg Day & Squats',
+    duration: '1h 18m',
+    volume: '16,250 kg',
+    prs: ['Squat 145kg'],
+    exercises: [
+      {
+        name: 'Barbell Back Squat',
+        sets: [
+          { setNumber: 1, weight: 120, reps: 6, completed: true },
+          { setNumber: 2, weight: 135, reps: 5, completed: true },
+          { setNumber: 3, weight: 145, reps: 3, completed: true },
+        ],
+      },
+      {
+        name: 'Romanian Deadlift',
+        sets: [
+          { setNumber: 1, weight: 90, reps: 8, completed: true },
+          { setNumber: 2, weight: 90, reps: 8, completed: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'w_4',
+    date: 'Mon, Sep 7',
+    name: 'Upper Body Conditioning',
+    duration: '54m',
+    volume: '9,800 kg',
+    prs: [],
+    exercises: [
+      {
+        name: 'Overhead Press',
+        sets: [
+          { setNumber: 1, weight: 55, reps: 8, completed: true },
+          { setNumber: 2, weight: 60, reps: 6, completed: true },
+        ],
+      },
+      {
+        name: 'Dips',
+        sets: [
+          { setNumber: 1, weight: 0, reps: 15, completed: true },
+          { setNumber: 2, weight: 10, reps: 10, completed: true },
+        ],
+      },
+    ],
+  },
+];
+
+export const HistoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { startNewWorkoutSession, testHaptics } = useWorkout();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDay, setSelectedDay] = useState<number>(11);
+  const [selectedWorkout, setSelectedWorkout] = useState<PastWorkoutDetail | null>(null);
+
+  const daysOfWeek = [
+    { day: 'Mon', num: 7, active: true },
+    { day: 'Tue', num: 8, active: false },
+    { day: 'Wed', num: 9, active: true },
+    { day: 'Thu', num: 10, active: true },
+    { day: 'Fri', num: 11, active: true, today: true },
+    { day: 'Sat', num: 12, active: false },
+    { day: 'Sun', num: 13, active: false },
   ];
+
+  const filteredWorkouts = ALL_PAST_WORKOUTS.filter((w) => {
+    return w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           w.exercises.some((e) => e.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
   return (
     <View style={styles.screen}>
       <Header subtitle="Workout Logs & Archive" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Calendar Summary */}
+        {/* Search Input */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color={COLORS.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search past sessions or exercises..."
+            placeholderTextColor={COLORS.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Interactive Calendar Summary */}
         <View style={styles.calendarCard}>
           <View style={styles.calendarHeader}>
             <Text style={styles.monthTitle}>SEPTEMBER 2026</Text>
-            <Text style={styles.monthStats}>18 Workouts</Text>
+            <Text style={styles.monthStats}>18 Workouts Logged</Text>
           </View>
 
-          {/* 7 Days of current week */}
+          {/* 7 Days of current week (Clickable) */}
           <View style={styles.daysRow}>
-            {[
-              { day: 'Mon', num: '7', active: true },
-              { day: 'Tue', num: '8', active: false },
-              { day: 'Wed', num: '9', active: true },
-              { day: 'Thu', num: '10', active: true },
-              { day: 'Fri', num: '11', active: true, today: true },
-              { day: 'Sat', num: '12', active: false },
-              { day: 'Sun', num: '13', active: false },
-            ].map((item, idx) => (
-              <View
-                key={idx}
-                style={[
-                  styles.dayBox,
-                  item.today && styles.dayBoxToday,
-                ]}
-              >
-                <Text style={[styles.dayBoxLabel, item.today && styles.dayBoxLabelToday]}>
-                  {item.day}
-                </Text>
-                <Text style={[styles.dayBoxNum, item.today && styles.dayBoxNumToday]}>
-                  {item.num}
-                </Text>
-                <View
+            {daysOfWeek.map((item) => {
+              const isSelected = selectedDay === item.num;
+
+              return (
+                <TouchableOpacity
+                  key={item.num}
                   style={[
-                    styles.activityDot,
-                    item.active && styles.activityDotActive,
+                    styles.dayBox,
+                    isSelected && styles.dayBoxSelected,
+                    item.today && !isSelected && styles.dayBoxToday,
                   ]}
-                />
-              </View>
-            ))}
+                  onPress={() => {
+                    setSelectedDay(item.num);
+                    testHaptics('light');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dayBoxLabel, isSelected && styles.dayBoxLabelSelected]}>
+                    {item.day}
+                  </Text>
+                  <Text style={[styles.dayBoxNum, isSelected && styles.dayBoxNumSelected]}>
+                    {item.num}
+                  </Text>
+                  <View
+                    style={[
+                      styles.activityDot,
+                      item.active && styles.activityDotActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         {/* Workouts History List */}
-        <Text style={styles.sectionHeader}>PAST SESSIONS</Text>
+        <Text style={styles.sectionHeader}>PAST SESSIONS ({filteredWorkouts.length})</Text>
 
-        {pastWorkouts.map((w) => (
-          <View key={w.id} style={styles.workoutCard}>
+        {filteredWorkouts.map((w) => (
+          <TouchableOpacity
+            key={w.id}
+            style={styles.workoutCard}
+            onPress={() => {
+              setSelectedWorkout(w);
+              testHaptics('light');
+            }}
+            activeOpacity={0.75}
+          >
             <View style={styles.cardTop}>
               <View>
                 <Text style={styles.workoutDate}>{w.date}</Text>
@@ -120,7 +240,7 @@ export const HistoryScreen: React.FC = () => {
             {/* Exercises List */}
             <View style={styles.exerciseList}>
               <Text style={styles.exerciseListText} numberOfLines={1}>
-                {w.exercises.join(' • ')}
+                {w.exercises.map((e) => e.name).join(' • ')}
               </Text>
             </View>
 
@@ -130,14 +250,34 @@ export const HistoryScreen: React.FC = () => {
                 <Ionicons name="time-outline" size={14} color={COLORS.textMuted} />
                 <Text style={styles.metaText}>{w.duration}</Text>
               </View>
-              <TouchableOpacity style={styles.detailBtn}>
-                <Text style={styles.detailBtnText}>View Details</Text>
+              <View style={styles.detailBtn}>
+                <Text style={styles.detailBtnText}>View Full Sets</Text>
                 <Ionicons name="chevron-forward" size={14} color={COLORS.primary} />
-              </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
+
+        {filteredWorkouts.length === 0 && (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No workouts found matching "{searchQuery}"</Text>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Workout Detail Modal */}
+      <WorkoutDetailModal
+        workout={selectedWorkout}
+        visible={selectedWorkout !== null}
+        onClose={() => setSelectedWorkout(null)}
+        onRepeat={() => {
+          if (selectedWorkout) {
+            startNewWorkoutSession(selectedWorkout.name);
+            setSelectedWorkout(null);
+            navigation.navigate('Workout');
+          }
+        }}
+      />
     </View>
   );
 };
@@ -150,6 +290,24 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: SPACING.lg,
     paddingBottom: 100,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.borderCard,
+    marginBottom: SPACING.lg,
+  },
+  searchInput: {
+    flex: 1,
+    color: COLORS.textPrimary,
+    fontSize: 13,
+    padding: 0,
   },
   calendarCard: {
     backgroundColor: COLORS.bgCard,
@@ -187,10 +345,13 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.sm,
     flex: 1,
   },
+  dayBoxSelected: {
+    backgroundColor: COLORS.primary,
+  },
   dayBoxToday: {
-    backgroundColor: 'rgba(0, 229, 153, 0.1)',
+    backgroundColor: 'rgba(0, 229, 153, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 229, 153, 0.3)',
+    borderColor: 'rgba(0, 229, 153, 0.35)',
   },
   dayBoxLabel: {
     fontSize: 10,
@@ -198,8 +359,9 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     marginBottom: 4,
   },
-  dayBoxLabelToday: {
-    color: COLORS.primary,
+  dayBoxLabelSelected: {
+    color: '#0B0F17',
+    fontWeight: '800',
   },
   dayBoxNum: {
     fontSize: 14,
@@ -207,8 +369,9 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 6,
   },
-  dayBoxNumToday: {
-    color: COLORS.primary,
+  dayBoxNumSelected: {
+    color: '#0B0F17',
+    fontWeight: '900',
   },
   activityDot: {
     width: 6,
@@ -317,5 +480,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.primary,
+  },
+  emptyCard: {
+    padding: 30,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: COLORS.textMuted,
+    fontSize: 13,
   },
 });

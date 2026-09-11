@@ -12,20 +12,27 @@ import { COLORS, SPACING, RADIUS } from '../theme/theme';
 import { Header } from '../components/Header';
 import { SetRow } from '../components/SetRow';
 import { RestTimerBar } from '../components/RestTimerBar';
+import { AddExerciseModal } from '../components/AddExerciseModal';
+import { WorkoutFinishModal } from '../components/WorkoutFinishModal';
 import { useWorkout } from '../context/WorkoutContext';
 
 export const ActiveWorkoutScreen: React.FC = () => {
   const {
+    workoutName,
     workoutSeconds,
-    sets,
-    toggleSet,
+    isWorkoutTimerRunning,
+    toggleTimerPause,
+    activeExercises,
+    toggleExerciseExpanded,
     addSet,
-    completeWorkout,
+    removeExerciseFromWorkout,
+    openFinishModal,
+    workoutNotes,
+    setWorkoutNotes,
+    unit,
   } = useWorkout();
 
-  const [weightInput, setWeightInput] = useState('80');
-  const [repsInput, setRepsInput] = useState('8');
-  const [showAddControls, setShowAddControls] = useState(false);
+  const [isAddExerciseModalVisible, setIsAddExerciseModalVisible] = useState(false);
 
   const formatSeconds = (total: number) => {
     const mins = Math.floor(total / 60);
@@ -33,30 +40,32 @@ export const ActiveWorkoutScreen: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleAddNewSet = () => {
-    const w = parseFloat(weightInput) || 80;
-    const r = parseInt(repsInput, 10) || 8;
-    addSet(w, r, 8.5, 'N');
-    setShowAddControls(false);
-  };
-
   return (
     <View style={styles.screen}>
-      <Header subtitle="Active Training Session" />
+      <Header subtitle="Active Session" />
 
       {/* Top Workout Control Bar */}
       <View style={styles.sessionHeader}>
-        <View>
-          <Text style={styles.sessionTitle}>Push Day (A)</Text>
-          <View style={styles.timerBadge}>
-            <Ionicons name="stopwatch-outline" size={14} color={COLORS.primary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.sessionTitle} numberOfLines={1}>{workoutName}</Text>
+          <TouchableOpacity
+            style={styles.timerBadge}
+            onPress={toggleTimerPause}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isWorkoutTimerRunning ? 'pause-circle-outline' : 'play-circle-outline'}
+              size={16}
+              color={COLORS.primary}
+            />
             <Text style={styles.timerText}>{formatSeconds(workoutSeconds)}</Text>
-          </View>
+            <Text style={styles.timerStatus}>({isWorkoutTimerRunning ? 'Running' : 'Paused'})</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
           style={styles.finishBtn}
-          onPress={completeWorkout}
+          onPress={openFinishModal}
           activeOpacity={0.8}
         >
           <Ionicons name="checkmark-circle-outline" size={16} color="#0B0F17" />
@@ -65,132 +74,141 @@ export const ActiveWorkoutScreen: React.FC = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Exercise Card 1: Barbell Bench Press */}
-        <View style={styles.exerciseCard}>
-          <View style={styles.exerciseHeader}>
-            <View>
-              <Text style={styles.exerciseIndex}>EXERCISE 1 OF 5</Text>
-              <Text style={styles.exerciseName}>Barbell Bench Press</Text>
-            </View>
-            <TouchableOpacity style={styles.infoIcon}>
-              <Ionicons name="information-circle-outline" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          </View>
+        {/* Dynamic List of Active Exercises */}
+        {activeExercises.map((exercise, exIndex) => {
+          const completedCount = exercise.sets.filter((s) => s.completed).length;
 
-          {/* Muscle Badges */}
-          <View style={styles.badgeRow}>
-            <View style={[styles.badge, styles.badgePrimary]}>
-              <Text style={styles.badgePrimaryText}>Chest</Text>
-            </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Triceps</Text>
-            </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Front Delts</Text>
-            </View>
-          </View>
+          return (
+            <View key={exercise.id} style={styles.exerciseCard}>
+              {/* Exercise Header - Tap to Expand/Collapse */}
+              <View style={styles.exerciseHeader}>
+                <TouchableOpacity
+                  style={styles.headerTitleArea}
+                  onPress={() => toggleExerciseExpanded(exercise.id)}
+                  activeOpacity={0.7}
+                >
+                  <View>
+                    <Text style={styles.exerciseIndex}>EXERCISE {exIndex + 1} OF {activeExercises.length}</Text>
+                    <Text style={styles.exerciseName}>{exercise.name}</Text>
+                    {!exercise.isExpanded && (
+                      <Text style={styles.collapsedSubtitle}>
+                        {completedCount}/{exercise.sets.length} sets completed • Tap to expand
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
 
-          {/* Table Header */}
-          <View style={styles.tableHeader}>
-            <Text style={[styles.th, { width: 44 }]}>SET</Text>
-            <Text style={[styles.th, { flex: 1.2 }]}>PREVIOUS</Text>
-            <Text style={[styles.th, { flex: 1, textAlign: 'center' }]}>KG</Text>
-            <Text style={[styles.th, { flex: 1, textAlign: 'center' }]}>REPS</Text>
-            <Text style={[styles.th, { width: 42, textAlign: 'center' }]}>✓</Text>
-          </View>
-
-          {/* Sets List */}
-          {sets.map((item) => (
-            <SetRow
-              key={item.id}
-              set={item}
-              prevWeight={80}
-              prevReps={8}
-              onToggle={toggleSet}
-            />
-          ))}
-
-          {/* Add Set Quick Input or Button */}
-          {showAddControls ? (
-            <View style={styles.addControlBox}>
-              <Text style={styles.addControlLabel}>Next Set Details:</Text>
-              <View style={styles.addInputRow}>
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.inputLabel}>Weight (kg)</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    keyboardType="numeric"
-                    value={weightInput}
-                    onChangeText={setWeightInput}
-                  />
-                </View>
-
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.inputLabel}>Reps</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    keyboardType="numeric"
-                    value={repsInput}
-                    onChangeText={setRepsInput}
-                  />
+                <View style={styles.headerRightActions}>
+                  <TouchableOpacity
+                    style={styles.deleteExBtn}
+                    onPress={() => removeExerciseFromWorkout(exercise.id)}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={COLORS.textMuted} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => toggleExerciseExpanded(exercise.id)}
+                    style={styles.expandIconBtn}
+                  >
+                    <Ionicons
+                      name={exercise.isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
 
-              <View style={styles.addActionsRow}>
-                <TouchableOpacity
-                  style={styles.cancelAddBtn}
-                  onPress={() => setShowAddControls(false)}
-                >
-                  <Text style={styles.cancelAddText}>Cancel</Text>
-                </TouchableOpacity>
+              {/* Expanded Body */}
+              {exercise.isExpanded && (
+                <>
+                  {/* Muscle Badges */}
+                  <View style={styles.badgeRow}>
+                    {exercise.targetMuscles.map((muscle, mIdx) => (
+                      <View
+                        key={mIdx}
+                        style={[styles.badge, mIdx === 0 && styles.badgePrimary]}
+                      >
+                        <Text style={[styles.badgeText, mIdx === 0 && styles.badgePrimaryText]}>
+                          {muscle}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
 
-                <TouchableOpacity
-                  style={styles.confirmAddBtn}
-                  onPress={handleAddNewSet}
-                >
-                  <Text style={styles.confirmAddText}>Confirm Set</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addSetBtn}
-              onPress={() => setShowAddControls(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add" size={18} color={COLORS.primary} />
-              <Text style={styles.addSetBtnText}>Add Set</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+                  {/* Table Header */}
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.th, { width: 48 }]}>SET</Text>
+                    <Text style={[styles.th, { flex: 1.1 }]}>PREVIOUS</Text>
+                    <Text style={[styles.th, { flex: 1, textAlign: 'center' }]}>{unit.toUpperCase()}</Text>
+                    <Text style={[styles.th, { flex: 1, textAlign: 'center' }]}>REPS</Text>
+                    <Text style={[styles.th, { width: 34, textAlign: 'center' }]}>✓</Text>
+                    <Text style={[styles.th, { width: 22 }]}></Text>
+                  </View>
 
-        {/* Exercise Card 2 Preview: Incline Dumbbell Press */}
-        <View style={[styles.exerciseCard, styles.exerciseCardCollapsed]}>
-          <View style={styles.exerciseHeader}>
-            <View>
-              <Text style={styles.exerciseIndex}>EXERCISE 2 OF 5</Text>
-              <Text style={styles.exerciseName}>Incline Dumbbell Press</Text>
-              <Text style={styles.nextUpPreview}>3 sets planned • 32kg target</Text>
+                  {/* Sets List */}
+                  {exercise.sets.map((item) => (
+                    <SetRow
+                      key={item.id}
+                      exerciseId={exercise.id}
+                      set={item}
+                      prevWeight={item.weight}
+                      prevReps={item.reps}
+                    />
+                  ))}
+
+                  {/* Quick Add Set Button */}
+                  <TouchableOpacity
+                    style={styles.addSetBtn}
+                    onPress={() => addSet(exercise.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add" size={16} color={COLORS.primary} />
+                    <Text style={styles.addSetBtnText}>Add Set</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
-            <Ionicons name="chevron-down" size={20} color={COLORS.textMuted} />
+          );
+        })}
+
+        {/* Add New Exercise Card / Button */}
+        <TouchableOpacity
+          style={styles.addExerciseMainBtn}
+          onPress={() => setIsAddExerciseModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle" size={22} color={COLORS.primary} />
+          <Text style={styles.addExerciseMainBtnText}>+ ADD EXERCISE TO SESSION</Text>
+        </TouchableOpacity>
+
+        {/* Workout Notes Section */}
+        <View style={styles.notesCard}>
+          <View style={styles.notesHeader}>
+            <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+            <Text style={styles.notesTitle}>SESSION LOG & NOTES</Text>
           </View>
-        </View>
-
-        {/* Exercise Card 3 Preview: Cable Chest Fly */}
-        <View style={[styles.exerciseCard, styles.exerciseCardCollapsed]}>
-          <View style={styles.exerciseHeader}>
-            <View>
-              <Text style={styles.exerciseIndex}>EXERCISE 3 OF 5</Text>
-              <Text style={styles.exerciseName}>Cable Chest Fly</Text>
-              <Text style={styles.nextUpPreview}>3 sets planned • 18kg target</Text>
-            </View>
-            <Ionicons name="chevron-down" size={20} color={COLORS.textMuted} />
-          </View>
+          <TextInput
+            style={styles.notesInput}
+            value={workoutNotes}
+            onChangeText={setWorkoutNotes}
+            placeholder="Add notes about form, cues, feeling, or equipment settings..."
+            placeholderTextColor={COLORS.textMuted}
+            multiline
+          />
         </View>
       </ScrollView>
 
       {/* Floating Rest Timer Component */}
       <RestTimerBar />
+
+      {/* Add Exercise Modal */}
+      <AddExerciseModal
+        visible={isAddExerciseModalVisible}
+        onClose={() => setIsAddExerciseModalVisible(false)}
+      />
+
+      {/* Finish Workout Summary Modal */}
+      <WorkoutFinishModal />
     </View>
   );
 };
@@ -218,14 +236,18 @@ const styles = StyleSheet.create({
   timerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
+    gap: 5,
+    marginTop: 3,
   },
   timerText: {
     fontSize: 13,
     fontWeight: '800',
     color: COLORS.primary,
     fontVariant: ['tabular-nums'],
+  },
+  timerStatus: {
+    fontSize: 11,
+    color: COLORS.textMuted,
   },
   finishBtn: {
     flexDirection: 'row',
@@ -248,7 +270,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.lg,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   exerciseCard: {
     backgroundColor: COLORS.bgCard,
@@ -256,16 +278,15 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.borderCard,
-    marginBottom: SPACING.lg,
-  },
-  exerciseCardCollapsed: {
-    opacity: 0.75,
+    marginBottom: SPACING.md,
   },
   exerciseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+  },
+  headerTitleArea: {
+    flex: 1,
   },
   exerciseIndex: {
     fontSize: 10,
@@ -274,23 +295,32 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   exerciseName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: COLORS.textPrimary,
     marginTop: 2,
   },
-  nextUpPreview: {
+  collapsedSubtitle: {
     fontSize: 12,
     color: COLORS.textMuted,
     marginTop: 2,
   },
-  infoIcon: {
-    padding: 4,
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteExBtn: {
+    padding: 6,
+  },
+  expandIconBtn: {
+    padding: 6,
   },
   badgeRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
-    marginBottom: SPACING.md,
+    marginVertical: SPACING.sm,
   },
   badge: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
@@ -314,7 +344,7 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: 10,
     paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderSubtle,
@@ -331,7 +361,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: RADIUS.md,
     backgroundColor: 'rgba(0, 229, 153, 0.08)',
     borderWidth: 1,
@@ -340,74 +370,57 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   addSetBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: COLORS.primary,
   },
-  addControlBox: {
-    backgroundColor: COLORS.bgElevated,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: COLORS.borderHighlight,
-  },
-  addControlLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  addInputRow: {
+  addExerciseMainBtn: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 10,
-  },
-  inputWrapper: {
-    flex: 1,
-  },
-  inputLabel: {
-    fontSize: 10,
-    color: COLORS.textMuted,
-    marginBottom: 4,
-  },
-  textInput: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: COLORS.bgCard,
-    borderRadius: RADIUS.sm,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderStyle: 'dashed',
+    borderRadius: RADIUS.lg,
+    paddingVertical: 14,
+    marginBottom: SPACING.lg,
+  },
+  addExerciseMainBtnText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: COLORS.primary,
+    letterSpacing: 0.8,
+  },
+  notesCard: {
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.borderCard,
-    color: COLORS.textPrimary,
-    fontSize: 16,
-    fontWeight: '800',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    textAlign: 'center',
   },
-  addActionsRow: {
+  notesHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
-  cancelAddBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: RADIUS.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  cancelAddText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-  confirmAddBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.primary,
-  },
-  confirmAddText: {
-    fontSize: 12,
-    color: '#0B0F17',
+  notesTitle: {
+    fontSize: 11,
     fontWeight: '800',
+    color: COLORS.primary,
+    letterSpacing: 1,
+  },
+  notesInput: {
+    backgroundColor: COLORS.bgElevated,
+    borderRadius: RADIUS.md,
+    padding: 10,
+    color: COLORS.textPrimary,
+    fontSize: 13,
+    minHeight: 60,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: COLORS.borderCard,
   },
 });
