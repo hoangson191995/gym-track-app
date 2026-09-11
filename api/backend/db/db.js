@@ -5,7 +5,7 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:justkidding1904s@db.obpvcgosumyjehkhgshv.supabase.co:5432/postgres';
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.obpvcgosumyjehkhgshv:justkidding1904s@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
 
 export const pool = new Pool({
   connectionString,
