@@ -30,12 +30,13 @@ app.get(['/api', '/api/health'], (req, res) => {
   });
 });
 
-// Serve static frontend files
+// Serve static frontend files from public/ and root
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
 // Fallback to index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
