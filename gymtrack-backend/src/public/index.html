@@ -1,0 +1,388 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GymTrack Backend API Dashboard & Test Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #06090E;
+      --bg-card: #0F1622;
+      --bg-elevated: #162234;
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #00E599;
+      --accent-cyan: #00C2FF;
+      --accent-gold: #F59E0B;
+      --accent-purple: #A855F7;
+      --text: #FFFFFF;
+      --text-muted: #8492A6;
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: radial-gradient(circle at 50% 0%, #132338 0%, #06090E 70%);
+    }
+
+    header {
+      padding: 16px 32px;
+      background: rgba(15, 22, 34, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: var(--primary);
+      color: #06090E;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+    }
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-title span { color: var(--primary); }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 99px;
+      background: rgba(0, 229, 153, 0.12);
+      border: 1px solid rgba(0, 229, 153, 0.3);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .api-btn {
+      padding: 12px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+    .api-btn:hover {
+      border-color: var(--primary);
+      transform: translateX(4px);
+    }
+    .api-btn .method {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .method-get { background: rgba(0, 194, 255, 0.2); color: var(--accent-cyan); }
+    .method-post { background: rgba(0, 229, 153, 0.2); color: var(--primary); }
+
+    .response-pane {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .response-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    pre {
+      background: #080C14;
+      border-radius: 10px;
+      padding: 16px;
+      color: #A5F3FC;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      overflow-x: auto;
+      flex: 1;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .meta-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title">Gym<span>Track</span> API Server</div>
+        <div style="font-size: 11.5px; color: var(--text-muted);">RESTful v1.0 • Node.js Express</div>
+      </div>
+    </div>
+    <div class="badge-status">
+      <div class="dot"></div>
+      <span>Connected to Supabase PostgreSQL (Singapore)</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Left Panel: API Actions -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <div class="card">
+        <div class="card-title">🔑 Authentication & Users</div>
+        <button class="api-btn" onclick="testLogin()">
+          <span>Login (Alex Nguyen)</span>
+          <span class="method method-post">POST /auth/login</span>
+        </button>
+        <button class="api-btn" onclick="testMe()">
+          <span>Get Profile & Stats</span>
+          <span class="method method-get">GET /users/me</span>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏋️ Exercises & Programs</div>
+        <button class="api-btn" onclick="testExercises()">
+          <span>List Exercise Library</span>
+          <span class="method method-get">GET /exercises</span>
+        </button>
+        <button class="api-btn" onclick="testPrograms()">
+          <span>List Workout Programs</span>
+          <span class="method method-get">GET /programs</span>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚡ Workout & Set Logging (Sec 18)</div>
+        <button class="api-btn" onclick="testStartWorkout()">
+          <span>1. Start Workout (Push Day)</span>
+          <span class="method method-post">POST /workouts</span>
+        </button>
+        <button class="api-btn" onclick="testLogSet()">
+          <span>2. Log Set (85kg × 8, check PR!)</span>
+          <span class="method method-post">POST /sets</span>
+        </button>
+        <button class="api-btn" onclick="testVolumeProgress()">
+          <span>3. Volume Distribution</span>
+          <span class="method method-get">GET /progress/volume</span>
+        </button>
+        <button class="api-btn" onclick="testStrengthProgress()">
+          <span>4. Strength PR History</span>
+          <span class="method method-get">GET /progress/strength</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Right Panel: Live Response Inspector -->
+    <div class="response-pane">
+      <div class="response-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Live API Response</span>
+          <span id="res-status" class="meta-tag" style="color: var(--primary);">READY</span>
+          <span id="res-time" class="meta-tag">0ms</span>
+        </div>
+        <span id="res-endpoint" class="meta-tag" style="color: var(--accent-cyan);">Click any action on the left to test</span>
+      </div>
+
+      <pre id="json-viewer">// Output JSON will be displayed here in real-time...</pre>
+    </div>
+  </div>
+
+  <script>
+    let authToken = '';
+    let currentWorkoutId = '';
+    let currentWorkoutExerciseId = '';
+
+    async function apiCall(endpoint, method = 'GET', body = null) {
+      const viewer = document.getElementById('json-viewer');
+      const statusTag = document.getElementById('res-status');
+      const timeTag = document.getElementById('res-time');
+      const endpointTag = document.getElementById('res-endpoint');
+
+      endpointTag.textContent = `${method} ${endpoint}`;
+      statusTag.textContent = 'PENDING...';
+      statusTag.style.color = '#F59E0B';
+      const t0 = performance.now();
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+        const opts = { method, headers };
+        if (body) opts.body = JSON.stringify(body);
+
+        const res = await fetch(endpoint, opts);
+        const data = await res.json();
+        const latency = Math.round(performance.now() - t0);
+
+        statusTag.textContent = `${res.status} ${res.statusText}`;
+        statusTag.style.color = res.ok ? 'var(--primary)' : '#EF4444';
+        timeTag.textContent = `${latency}ms`;
+        viewer.textContent = JSON.stringify(data, null, 2);
+
+        return { res, data };
+      } catch (err) {
+        statusTag.textContent = 'ERROR';
+        statusTag.style.color = '#EF4444';
+        viewer.textContent = `Error: ${err.message}`;
+      }
+    }
+
+    async function testLogin() {
+      const { data } = await apiCall('/api/v1/auth/login', 'POST', {
+        email: 'alexnguyen@gmail.com',
+        password: 'password123'
+      });
+      if (data && data.token) {
+        authToken = data.token;
+      }
+    }
+
+    async function testMe() {
+      if (!authToken) await testLogin();
+      await apiCall('/api/v1/users/me', 'GET');
+    }
+
+    async function testExercises() {
+      await apiCall('/api/v1/exercises?category=all', 'GET');
+    }
+
+    async function testPrograms() {
+      if (!authToken) await testLogin();
+      await apiCall('/api/v1/programs', 'GET');
+    }
+
+    async function testStartWorkout() {
+      if (!authToken) await testLogin();
+      const { data } = await apiCall('/api/v1/workouts', 'POST', {
+        name: 'Push Day (Hypertrophy)',
+        program_id: 'ppl'
+      });
+      if (data && data.workout) {
+        currentWorkoutId = data.workout.id;
+        // add exercise to workout
+        const exRes = await apiCall(`/api/v1/workouts/${currentWorkoutId}/exercises`, 'POST', {
+          exercise_id: 'bench_press',
+          exercise_order: 1
+        });
+        if (exRes.data && exRes.data.workoutExercise) {
+          currentWorkoutExerciseId = exRes.data.workoutExercise.id;
+        }
+      }
+    }
+
+    async function testLogSet() {
+      if (!currentWorkoutExerciseId) {
+        await testStartWorkout();
+      }
+      await apiCall(`/api/v1/workout-exercises/${currentWorkoutExerciseId}/sets`, 'POST', {
+        set_number: 1,
+        set_type: 'N',
+        weight: 85,
+        reps: 8,
+        rpe: 8.5,
+        rest_seconds: 120,
+        completed: true
+      });
+    }
+
+    async function testVolumeProgress() {
+      if (!authToken) await testLogin();
+      await apiCall('/api/v1/progress/volume?timeframe=1m', 'GET');
+    }
+
+    async function testStrengthProgress() {
+      if (!authToken) await testLogin();
+      await apiCall('/api/v1/progress/strength?exercise=bench_press', 'GET');
+    }
+
+    // Auto-login on load
+    window.addEventListener('DOMContentLoaded', () => {
+      testLogin();
+    });
+  </script>
+</body>
+</html>
