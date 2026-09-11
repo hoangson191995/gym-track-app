@@ -163,6 +163,16 @@ class GymTrackApp {
     }
   }
 
+  showToast(msg) {
+    this.store.toastMessage = msg;
+    this.render();
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      this.store.toastMessage = null;
+      this.render();
+    }, 3200);
+  }
+
   initTimers() {
     // Workout timer tick
     setInterval(() => {
@@ -582,15 +592,7 @@ class GymTrackApp {
         this.render();
       },
 
-      showToast: (msg) => {
-        this.store.toastMessage = msg;
-        this.render();
-        if (this.toastTimer) clearTimeout(this.toastTimer);
-        this.toastTimer = setTimeout(() => {
-          this.store.toastMessage = null;
-          this.render();
-        }, 3200);
-      },
+      showToast: (msg) => this.showToast(msg),
 
       // Export as Full JSON Backup
       exportDataJSON: () => {
